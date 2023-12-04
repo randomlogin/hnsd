@@ -8,6 +8,8 @@
 #include "pool.h"
 #include "req.h"
 
+
+
 static bool
 hsk_hesiod_txt_push(char *name, char *text, hsk_dns_rrs_t *an) {
   hsk_dns_rr_t *rr = hsk_dns_rr_create(HSK_DNS_TXT);
@@ -119,41 +121,25 @@ hsk_hesiod_resolve(hsk_dns_req_t *req, hsk_ns_t *ns) {
   msg->flags |= HSK_DNS_AA;
   hsk_dns_rrs_t *an = &msg->an;
 
-  // CHAIN
-  //   TIP
-  if (hsk_dns_is_subdomain(req->name, "hash.tip.chain.hnsd.")) {
-    if (!hsk_hesiod_txt_push_hash("hash.tip.chain.hnsd.",
-                                  ns->pool->chain.tip->hash,
-                                  an))
-      goto fail;
-  }
 
   if (hsk_dns_is_subdomain(req->name, "height.tip.chain.hnsd.")) {
-    if (!hsk_hesiod_txt_push_u64("height.tip.chain.hnsd.",
-                                 ns->pool->chain.tip->height,
-                                 an))
+    if (!hsk_hesiod_txt_push_u64("height.tip.chain.hnsd.", ns->pool->chain.tip->height, an))
       goto fail;
   }
 
   if (hsk_dns_is_subdomain(req->name, "time.tip.chain.hnsd.")) {
-    if (!hsk_hesiod_txt_push_u64("time.tip.chain.hnsd.",
-                                 ns->pool->chain.tip->time,
-                                 an))
+    if (!hsk_hesiod_txt_push_u64("time.tip.chain.hnsd.", ns->pool->chain.tip->time, an))
       goto fail;
   }
 
   if (hsk_dns_is_subdomain(req->name, "synced.chain.hnsd.")) {
-    if (!hsk_hesiod_txt_push("synced.chain.hnsd.",
-                             ns->pool->chain.synced ? "true" : "false",
-                             an))
+    if (!hsk_hesiod_txt_push("synced.chain.hnsd.", ns->pool->chain.synced ? "true" : "false", an))
       goto fail;
   }
 
   //   PROGRESS
   if (hsk_dns_is_subdomain(req->name, "progress.chain.hnsd.")) {
-    if (!hsk_hesiod_txt_push_float("progress.chain.hnsd.",
-                             hsk_chain_progress(&ns->pool->chain),
-                             an))
+    if (!hsk_hesiod_txt_push_float("progress.chain.hnsd.", hsk_chain_progress(&ns->pool->chain), an))
       goto fail;
   }
 
@@ -162,9 +148,51 @@ hsk_hesiod_resolve(hsk_dns_req_t *req, hsk_ns_t *ns) {
   if (hsk_dns_is_subdomain(req->name, "size.pool.hnsd.")) {
     char size[65];
     sprintf(size, "%d", ns->pool->size);
-    if (!hsk_hesiod_txt_push("size.pool.hnsd.",
-                             size,
-                             an))
+    if (!hsk_hesiod_txt_push("size.pool.hnsd.", size, an))
+      goto fail;
+  }
+
+  //  PEERS
+  if (hsk_dns_is_subdomain(req->name, "name_root.tip.chain.hnsd.")) {
+    if (!hsk_hesiod_txt_push_hash("name_root.tip.chain.hnsd.", ns->pool->chain.tip->name_root, an))
+      goto fail;
+  }
+
+
+  // CHAIN
+  //   TIP
+  if (hsk_dns_is_subdomain(req->name, "hash.tip.chain.hnsd.")) {
+    if (!hsk_hesiod_txt_push_hash("hash.tip.chain.hnsd.", ns->pool->chain.tip->hash, an))
+      goto fail;
+  }
+
+  if (hsk_dns_is_subdomain(req->name, "height.tip.chain.hnsd.")) {
+    if (!hsk_hesiod_txt_push_u64("height.tip.chain.hnsd.", ns->pool->chain.tip->height, an))
+      goto fail;
+  }
+
+  if (hsk_dns_is_subdomain(req->name, "time.tip.chain.hnsd.")) {
+    if (!hsk_hesiod_txt_push_u64("time.tip.chain.hnsd.", ns->pool->chain.tip->time, an))
+      goto fail;
+  }
+
+  if (hsk_dns_is_subdomain(req->name, "synced.chain.hnsd.")) {
+    if (!hsk_hesiod_txt_push("synced.chain.hnsd.", ns->pool->chain.synced ? "true" : "false", an))
+      goto fail;
+  }
+
+  //   PROGRESS
+  if (hsk_dns_is_subdomain(req->name, "progress.chain.hnsd.")) {
+    if (!hsk_hesiod_txt_push_float("progress.chain.hnsd.", hsk_chain_progress(&ns->pool->chain), an))
+      goto fail;
+  }
+
+  // POOL
+  //  SIZE
+  if (hsk_dns_is_subdomain(req->name, "size.pool.hnsd.")) {
+    char size[65];
+    sprintf(size, "%d", ns->pool->size);
+    if (!hsk_hesiod_txt_push("size.pool.hnsd.", size, an))
       goto fail;
   }
 

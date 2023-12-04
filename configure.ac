@@ -1,7 +1,7 @@
 # Package version (semver)
 define(MAJOR, 2)
 define(MINOR, 99)
-define(PATCH, 0)
+define(PATCH, 1)
 
 # Shared library version
 # see: https://www.gnu.org/software/libtool/manual/html_node/Updating-version-info.html

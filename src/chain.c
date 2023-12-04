@@ -1,12 +1,12 @@
 #include "config.h"
 
 #include <assert.h>
-#include <stdint.h>
-#include <stdbool.h>
-#include <string.h>
 #include <stdarg.h>
+#include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "bn.h"
 #include "chain.h"
@@ -23,28 +23,20 @@
  * Prototypes
  */
 
-static int
-hsk_chain_init_genesis(hsk_chain_t *chain);
+static int hsk_chain_init_genesis(hsk_chain_t *chain);
 
-static int
-hsk_chain_insert(
-  hsk_chain_t *chain,
-  hsk_header_t *hdr,
-  const hsk_header_t *prev
-);
+static int hsk_chain_insert(hsk_chain_t *chain, hsk_header_t *hdr,
+                            const hsk_header_t *prev);
 
-static void
-hsk_chain_maybe_sync(hsk_chain_t *chain);
+static void hsk_chain_maybe_sync(hsk_chain_t *chain);
 
-static void
-hsk_chain_checkpoint_flush(hsk_chain_t *chain);
+static void hsk_chain_checkpoint_flush(hsk_chain_t *chain);
 
 /*
  * Helpers
  */
 
-static int
-qsort_cmp(const void *a, const void *b) {
+static int qsort_cmp(const void *a, const void *b) {
   int64_t x = *((int64_t *)a);
   int64_t y = *((int64_t *)b);
 
@@ -61,9 +53,7 @@ qsort_cmp(const void *a, const void *b) {
  * Chain
  */
 
-
-static void
-hsk_chain_log(const hsk_chain_t *chain, const char *fmt, ...) {
+static void hsk_chain_log(const hsk_chain_t *chain, const char *fmt, ...) {
   printf("chain (%u): ", (uint32_t)chain->height);
 
   va_list args;
@@ -72,8 +62,7 @@ hsk_chain_log(const hsk_chain_t *chain, const char *fmt, ...) {
   va_end(args);
 }
 
-int
-hsk_chain_init(hsk_chain_t *chain, const hsk_timedata_t *td) {
+int hsk_chain_init(hsk_chain_t *chain, const hsk_timedata_t *td) {
   if (!chain || !td)
     return HSK_EBADARGS;
 
@@ -92,8 +81,7 @@ hsk_chain_init(hsk_chain_t *chain, const hsk_timedata_t *td) {
   return hsk_chain_init_genesis(chain);
 }
 
-static int
-hsk_chain_init_genesis(hsk_chain_t *chain) {
+static int hsk_chain_init_genesis(hsk_chain_t *chain) {
   if (!chain)
     return HSK_EBADARGS;
 
@@ -128,8 +116,7 @@ hsk_chain_init_genesis(hsk_chain_t *chain) {
   return HSK_SUCCESS;
 }
 
-void
-hsk_chain_uninit(hsk_chain_t *chain) {
+void hsk_chain_uninit(hsk_chain_t *chain) {
   if (!chain)
     return;
 
@@ -142,8 +129,7 @@ hsk_chain_uninit(hsk_chain_t *chain) {
   chain->genesis = NULL;
 }
 
-void
-hsk_chain_free(hsk_chain_t *chain) {
+void hsk_chain_free(hsk_chain_t *chain) {
   if (!chain)
     return;
 
@@ -151,33 +137,29 @@ hsk_chain_free(hsk_chain_t *chain) {
   free(chain);
 }
 
-bool
-hsk_chain_has(const hsk_chain_t *chain, const uint8_t *hash) {
+bool hsk_chain_has(const hsk_chain_t *chain, const uint8_t *hash) {
   return hsk_map_has(&chain->hashes, hash);
 }
 
-hsk_header_t *
-hsk_chain_get(const hsk_chain_t *chain, const uint8_t *hash) {
+hsk_header_t *hsk_chain_get(const hsk_chain_t *chain, const uint8_t *hash) {
   return hsk_map_get(&chain->hashes, hash);
 }
 
-hsk_header_t *
-hsk_chain_get_by_height(const hsk_chain_t *chain, uint32_t height) {
+hsk_header_t *hsk_chain_get_by_height(const hsk_chain_t *chain,
+                                      uint32_t height) {
   return hsk_map_get(&chain->heights, &height);
 }
 
-bool
-hsk_chain_has_orphan(const hsk_chain_t *chain, const uint8_t *hash) {
+bool hsk_chain_has_orphan(const hsk_chain_t *chain, const uint8_t *hash) {
   return hsk_map_has(&chain->orphans, hash);
 }
 
-hsk_header_t *
-hsk_chain_get_orphan(const hsk_chain_t *chain, const uint8_t *hash) {
+hsk_header_t *hsk_chain_get_orphan(const hsk_chain_t *chain,
+                                   const uint8_t *hash) {
   return hsk_map_get(&chain->orphans, hash);
 }
 
-const uint8_t *
-hsk_chain_safe_root(const hsk_chain_t *chain) {
+const uint8_t *hsk_chain_safe_root(const hsk_chain_t *chain) {
   // The tree is committed on an interval.
   // Mainnet is 72 blocks, meaning at height 72,
   // the name set of the past 72 blocks are
@@ -202,15 +184,13 @@ hsk_chain_safe_root(const hsk_chain_t *chain) {
   hsk_header_t *prev = hsk_chain_get_by_height(chain, height);
   assert(prev);
 
-  hsk_chain_log(chain,
-    "using safe height of %u for resolution\n",
-    height);
+  hsk_chain_log(chain, "using safe height of %u for resolution\n", height);
 
   return prev->name_root;
 }
 
-static hsk_header_t *
-hsk_chain_resolve_orphan(hsk_chain_t *chain, const uint8_t *hash) {
+static hsk_header_t *hsk_chain_resolve_orphan(hsk_chain_t *chain,
+                                              const uint8_t *hash) {
   hsk_header_t *orphan = hsk_map_get(&chain->prevs, hash);
 
   if (!orphan)
@@ -222,12 +202,8 @@ hsk_chain_resolve_orphan(hsk_chain_t *chain, const uint8_t *hash) {
   return orphan;
 }
 
-hsk_header_t *
-hsk_chain_get_ancestor(
-  const hsk_chain_t *chain,
-  const hsk_header_t *hdr,
-  uint32_t height
-) {
+hsk_header_t *hsk_chain_get_ancestor(const hsk_chain_t *chain,
+                                     const hsk_header_t *hdr, uint32_t height) {
   assert(height >= 0);
   assert(height <= hdr->height);
 
@@ -241,13 +217,11 @@ hsk_chain_get_ancestor(
   return h;
 }
 
-static bool
-hsk_chain_has_work(const hsk_chain_t *chain) {
+static bool hsk_chain_has_work(const hsk_chain_t *chain) {
   return memcmp(chain->tip->work, HSK_CHAINWORK, 32) >= 0;
 }
 
-static void
-hsk_chain_maybe_sync(hsk_chain_t *chain) {
+static void hsk_chain_maybe_sync(hsk_chain_t *chain) {
   if (chain->synced)
     return;
 
@@ -263,8 +237,7 @@ hsk_chain_maybe_sync(hsk_chain_t *chain) {
   chain->synced = true;
 }
 
-float
-hsk_chain_progress(const hsk_chain_t *chain) {
+float hsk_chain_progress(const hsk_chain_t *chain) {
   uint64_t start = chain->genesis->time;
   uint64_t current = chain->tip->time - start;
   uint64_t end = hsk_timedata_now(chain->td) - start - (40 * 60);
@@ -276,13 +249,9 @@ hsk_chain_progress(const hsk_chain_t *chain) {
   return progress;
 }
 
-bool
-hsk_chain_synced(const hsk_chain_t *chain) {
-  return chain->synced;
-}
+bool hsk_chain_synced(const hsk_chain_t *chain) { return chain->synced; }
 
-static void
-hsk_chain_checkpoint_flush(hsk_chain_t *chain) {
+static void hsk_chain_checkpoint_flush(hsk_chain_t *chain) {
   // Setting is off
   if (!chain->prefix)
     return;
@@ -294,8 +263,8 @@ hsk_chain_checkpoint_flush(hsk_chain_t *chain) {
   hsk_store_write(chain);
 }
 
-void
-hsk_chain_get_locator(const hsk_chain_t *chain, hsk_getheaders_msg_t *msg) {
+void hsk_chain_get_locator(const hsk_chain_t *chain,
+                           hsk_getheaders_msg_t *msg) {
   assert(chain && msg);
 
   int i = 0;
@@ -331,8 +300,8 @@ hsk_chain_get_locator(const hsk_chain_t *chain, hsk_getheaders_msg_t *msg) {
   msg->hash_count = i;
 }
 
-static int64_t
-hsk_chain_get_mtp(const hsk_chain_t *chain, const hsk_header_t *prev) {
+static int64_t hsk_chain_get_mtp(const hsk_chain_t *chain,
+                                 const hsk_header_t *prev) {
   assert(chain);
 
   if (!prev)
@@ -354,15 +323,14 @@ hsk_chain_get_mtp(const hsk_chain_t *chain, const hsk_header_t *prev) {
   return median[size >> 1];
 }
 
-static void
-hsk_header_swap(hsk_header_t **x, hsk_header_t **y) {
+static void hsk_header_swap(hsk_header_t **x, hsk_header_t **y) {
   hsk_header_t *z = *x;
   *x = *y;
   *y = z;
 }
 
-static hsk_header_t *
-hsk_chain_suitable_block(const hsk_chain_t *chain, const hsk_header_t *prev) {
+static hsk_header_t *hsk_chain_suitable_block(const hsk_chain_t *chain,
+                                              const hsk_header_t *prev) {
   hsk_header_t *z = (hsk_header_t *)prev;
   assert(z);
 
@@ -384,10 +352,9 @@ hsk_chain_suitable_block(const hsk_chain_t *chain, const hsk_header_t *prev) {
   return y;
 }
 
-static uint32_t
-hsk_chain_retarget(const hsk_chain_t *chain,
-                   const hsk_header_t *first,
-                   const hsk_header_t *last) {
+static uint32_t hsk_chain_retarget(const hsk_chain_t *chain,
+                                   const hsk_header_t *first,
+                                   const hsk_header_t *last) {
   assert(chain && first && last);
   assert(last->height >= first->height);
 
@@ -447,12 +414,8 @@ hsk_chain_retarget(const hsk_chain_t *chain,
   return cmpct;
 }
 
-static uint32_t
-hsk_chain_get_target(
-  const hsk_chain_t *chain,
-  int64_t time,
-  const hsk_header_t *prev
-) {
+static uint32_t hsk_chain_get_target(const hsk_chain_t *chain, int64_t time,
+                                     const hsk_header_t *prev) {
   assert(chain);
 
   // Genesis
@@ -468,7 +431,7 @@ hsk_chain_get_target(
     // Special behavior for testnet:
     if (time > (int64_t)prev->time + HSK_TARGET_SPACING * 2)
       return HSK_BITS;
-   }
+  }
 
   if (prev->height < 144 + 2)
     return HSK_BITS;
@@ -482,12 +445,9 @@ hsk_chain_get_target(
   return hsk_chain_retarget(chain, first, last);
 }
 
-static hsk_header_t *
-hsk_chain_find_fork(
-  const hsk_chain_t *chain,
-  hsk_header_t *fork,
-  hsk_header_t *longer
-) {
+static hsk_header_t *hsk_chain_find_fork(const hsk_chain_t *chain,
+                                         hsk_header_t *fork,
+                                         hsk_header_t *longer) {
   assert(chain && fork && longer);
 
   while (!hsk_header_equal(fork, longer)) {
@@ -509,8 +469,7 @@ hsk_chain_find_fork(
   return fork;
 }
 
-static void
-hsk_chain_reorganize(hsk_chain_t *chain, hsk_header_t *competitor) {
+static void hsk_chain_reorganize(hsk_chain_t *chain, hsk_header_t *competitor) {
   assert(chain && competitor);
 
   hsk_header_t *tip = chain->tip;
@@ -573,8 +532,7 @@ hsk_chain_reorganize(hsk_chain_t *chain, hsk_header_t *competitor) {
   }
 }
 
-int
-hsk_chain_add(hsk_chain_t *chain, const hsk_header_t *h) {
+int hsk_chain_add(hsk_chain_t *chain, const hsk_header_t *h) {
   if (!chain || !h)
     return HSK_EBADARGS;
 
@@ -589,6 +547,9 @@ hsk_chain_add(hsk_chain_t *chain, const hsk_header_t *h) {
   const uint8_t *hash = hsk_header_cache(hdr);
 
   hsk_chain_log(chain, "adding block: %s\n", hsk_hex_encode32(hash));
+  hsk_chain_log(chain, "tree_root %s timestamp %d \n",
+                hsk_hex_encode32(hdr->name_root), hdr->time);
+  /* hsk_chain_log(chain, "timestamp %d\n", hdr->time); */
 
   int64_t now = hsk_timedata_now(chain->td);
 
@@ -675,12 +636,8 @@ fail:
   return rc;
 }
 
-static int
-hsk_chain_insert(
-  hsk_chain_t *chain,
-  hsk_header_t *hdr,
-  const hsk_header_t *prev
-) {
+static int hsk_chain_insert(hsk_chain_t *chain, hsk_header_t *hdr,
+                            const hsk_header_t *prev) {
   const uint8_t *hash = hsk_header_cache(hdr);
   int64_t mtp = hsk_chain_get_mtp(chain, prev);
 
@@ -692,9 +649,8 @@ hsk_chain_insert(
   uint32_t bits = hsk_chain_get_target(chain, hdr->time, prev);
 
   if (hdr->bits != bits) {
-    hsk_chain_log(chain,
-      "  rejected: bad-diffbits: %x != %x\n",
-      hdr->bits, bits);
+    hsk_chain_log(chain, "  rejected: bad-diffbits: %x != %x\n", hdr->bits,
+                  bits);
     return HSK_EBADDIFFBITS;
   }
 
@@ -721,32 +677,28 @@ hsk_chain_insert(
   return HSK_SUCCESS;
 }
 
-int
-hsk_chain_save(
-  hsk_chain_t *chain,
-  hsk_header_t *hdr
-) {
-    // Save the header
-    if (!hsk_map_set(&chain->hashes, &hdr->hash, (void *)hdr))
-      return HSK_ENOMEM;
+int hsk_chain_save(hsk_chain_t *chain, hsk_header_t *hdr) {
+  // Save the header
+  if (!hsk_map_set(&chain->hashes, &hdr->hash, (void *)hdr))
+    return HSK_ENOMEM;
 
-    if (!hsk_map_set(&chain->heights, &hdr->height, (void *)hdr)) {
-      hsk_map_del(&chain->hashes, &hdr->hash);
-      return HSK_ENOMEM;
-    }
+  if (!hsk_map_set(&chain->heights, &hdr->height, (void *)hdr)) {
+    hsk_map_del(&chain->hashes, &hdr->hash);
+    return HSK_ENOMEM;
+  }
 
-    // Set the chain tip
-    chain->height = hdr->height;
-    chain->tip = hdr;
+  // Set the chain tip
+  chain->height = hdr->height;
+  chain->tip = hdr;
 
-    hsk_chain_log(chain, "  added to main chain\n");
-    hsk_chain_log(chain, "  new height: %u\n", (uint32_t)chain->height);
+  hsk_chain_log(chain, "  added to main chain\n");
+  hsk_chain_log(chain, "  new height: %u\n", (uint32_t)chain->height);
 
-    hsk_chain_maybe_sync(chain);
+  hsk_chain_maybe_sync(chain);
 
-    // Save batch of headers to disk
-    if (chain->height % HSK_STORE_CHECKPOINT_WINDOW == 0)
-      hsk_chain_checkpoint_flush(chain);
+  // Save batch of headers to disk
+  if (chain->height % HSK_STORE_CHECKPOINT_WINDOW == 0)
+    hsk_chain_checkpoint_flush(chain);
 
-    return HSK_SUCCESS;
+  return HSK_SUCCESS;
 }
